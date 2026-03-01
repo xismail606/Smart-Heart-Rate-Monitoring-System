@@ -1,4 +1,4 @@
-// ===== Pulse Sensor Advanced Stable Version =====
+// ===== Pulse Sensor — Advanced Stable Version (Fixed) =====
 
 // ----- Pins -----
 const int pulsePin  = A0;
@@ -12,9 +12,8 @@ const int buzzerPin = 2;
 volatile boolean paused = false;
 
 // ----- EMA filter -----
-const float ALPHA = 0.15;   // Lower = smoother signal, less noise
+const float ALPHA = 0.25;
 volatile float filteredSignal = 512.0;
-volatile int rawSample = 512;
 
 // ----- PulseSensor variables -----
 volatile int BPM;
@@ -23,18 +22,18 @@ volatile int IBI        = 600;
 volatile boolean Pulse  = false;
 volatile boolean QS     = false;
 volatile bool noSignalFlag = false;
-volatile int rate[10];            // 10 beats instead of 15 — faster convergence
+volatile int rate[10];
 volatile unsigned long sampleCounter = 0;
 volatile unsigned long lastBeatTime  = 0;
 volatile int P      = 512;
 volatile int T      = 512;
-volatile int thresh = 512;
+volatile int thresh = 525;
 volatile int amp    = 100;
 volatile boolean firstBeat  = true;
 volatile boolean secondBeat = false;
 
-const int MIN_IBI = 500;          // Max BPM ~120 (blocks double-beat detection)
-const int MAX_IBI = 1200;         // Min BPM ~50
+const int MIN_IBI = 300;
+const int MAX_IBI = 1500;
 
 // ----- Buzzer -----
 unsigned long buzzerStartTime = 0;
@@ -45,9 +44,8 @@ bool buzzerOn        = false;
 // ----- BPM output -----
 float bpmSmooth = 0;
 bool bpmFirstReading = true;
-int  beatCount = 0;               // Count beats to skip first few
-const int SKIP_BEATS = 8;         // Skip first 8 beats (let algorithm stabilize)
-volatile int lastIBI = 600;       // For beat-to-beat validation
+int  beatCount = 0;
+const int SKIP_BEATS = 3;
 
 // ===== SETUP =====
 void setup() {
@@ -69,23 +67,13 @@ void setup() {
 
   Serial.println("STATUS:CALIBRATING");
 
+  // Calibration: read baseline
   long sum = 0;
-  int mn = 1023, mx = 0;
-
-  for (int i = 0; i < 200; i++) {
-    int v = analogRead(pulsePin);
-    sum += v;
-    if (v < mn) mn = v;
-    if (v > mx) mx = v;
+  for (int i = 0; i < 100; i++) {
+    sum += analogRead(pulsePin);
     delay(10);
   }
-
-  int baseline = sum / 200;
-  int range    = mx - mn;
-
-  thresh         = baseline + max((int)(range / 2), (int)30);
-  P              = baseline + range / 2;
-  T              = baseline;
+  int baseline = sum / 100;
   filteredSignal = baseline;
 
   interruptSetup();
@@ -100,7 +88,6 @@ void loop() {
     char cmdBuf[16];
     int len = Serial.readBytesUntil('\n', cmdBuf, sizeof(cmdBuf) - 1);
     cmdBuf[len] = '\0';
-    // Trim trailing \r
     if (len > 0 && cmdBuf[len - 1] == '\r') cmdBuf[len - 1] = '\0';
 
     if (strcmp(cmdBuf, "PAUSE") == 0) {
@@ -111,55 +98,93 @@ void loop() {
       digitalWrite(buzzerPin, LOW);
       Serial.println("STATUS:PAUSED");
     }
-
     else if (strcmp(cmdBuf, "RESUME") == 0) {
       paused = false;
-      firstBeat  = true;
-      secondBeat = false;
+      firstBeat       = true;
+      secondBeat      = false;
       bpmFirstReading = true;
-      beatCount = 0;
+      beatCount       = 0;
+      filteredSignal  = 512.0f;
+      thresh          = 525;
+      P               = 512;
+      T               = 512;
       Serial.println("STATUS:RESUMED");
+    }
+
+    else if (strcmp(cmdBuf, "RESET") == 0) {
+      // Full reset: stop, clear all state, restart
+      paused          = false;
+      firstBeat       = true;
+      secondBeat      = false;
+      Pulse           = false;
+      QS              = false;
+      noSignalFlag    = false;
+      bpmFirstReading = true;
+      beatCount       = 0;
+      bpmSmooth       = 0;
+      BPM             = 0;
+      IBI             = 600;
+      amp             = 100;
+      filteredSignal  = 512.0f;
+      thresh          = 525;
+      P               = 512;
+      T               = 512;
+      sampleCounter   = 0;
+      lastBeatTime    = 0;
+      for (int i = 0; i < 10; i++) rate[i] = 0;
+
+      digitalWrite(greenLED,  LOW);
+      digitalWrite(yellowLED, LOW);
+      digitalWrite(blueLED,   LOW);
+      digitalWrite(buzzerPin, LOW);
+      buzzerRemaining = 0;
+      buzzerOn        = false;
+
+      Serial.println("STATUS:RESET");
     }
   }
 
   // ---- Safe read from ISR ----
-  bool localQS = false;
-  int  localBPM = 0;
+  bool localQS       = false;
+  int  localBPM      = 0;
   bool localNoSignal = false;
 
   noInterrupts();
   if (QS) {
-    localQS = true;
+    localQS  = true;
     localBPM = BPM;
-    QS = false;
+    QS       = false;
   }
   if (noSignalFlag) {
     localNoSignal = true;
-    noSignalFlag = false;
+    noSignalFlag  = false;
   }
   interrupts();
 
   if (!paused) {
 
+    // FIX: handleBuzzer() moved BEFORE any early return
+    // so the buzzer is never stuck ON
+    handleBuzzer();
+
     if (localQS) {
       beatCount++;
 
-      // Skip first few beats — they are always unreliable
+      // Skip only first few unstable beats
       if (beatCount <= SKIP_BEATS) {
-        // Don't output, just let the rate array stabilize
-        return;
+        // NOTE: no return here — handleBuzzer() already called above
       }
-
-      if (localBPM >= 40 && localBPM <= 200) {
+      else if (localBPM >= 30 && localBPM <= 200) {
 
         // ===== BPM smoothing =====
+        // FIX: changed ratio from 0.5/0.5 to 0.7/0.3 for more stable display
         if (bpmFirstReading) {
-          bpmSmooth = localBPM;
+          bpmSmooth       = localBPM;
           bpmFirstReading = false;
         } else {
-          bpmSmooth = 0.3 * bpmSmooth + 0.7 * localBPM;
+          bpmSmooth = 0.7f * bpmSmooth + 0.3f * localBPM;
         }
-        int bpmOut = (int)bpmSmooth;
+        int bpmOut = (int)(bpmSmooth + 0.5f);  // round instead of truncate
 
         sendBPM(bpmOut);
       }
@@ -168,10 +193,8 @@ void loop() {
     if (localNoSignal) {
       Serial.println("STATUS:NO_SIGNAL");
       digitalWrite(greenLED, LOW);
-      digitalWrite(blueLED, LOW);
+      digitalWrite(blueLED,  LOW);
     }
-
-    handleBuzzer();
   }
 }
 
@@ -184,18 +207,18 @@ void sendBPM(int currentBPM) {
   if (currentBPM < 60) {
     Serial.println("STATUS:SLOW");
     digitalWrite(greenLED, LOW);
-    digitalWrite(blueLED, LOW);
+    digitalWrite(blueLED,  LOW);
     triggerBuzzer(1);
   }
   else if (currentBPM <= 100) {
     Serial.println("STATUS:NORMAL");
     digitalWrite(greenLED, HIGH);
-    digitalWrite(blueLED, LOW);
+    digitalWrite(blueLED,  LOW);
   }
   else {
     Serial.println("STATUS:HIGH");
     digitalWrite(greenLED, LOW);
-    digitalWrite(blueLED, HIGH);
+    digitalWrite(blueLED,  HIGH);
     triggerBuzzer(2);
   }
 }
@@ -217,16 +240,14 @@ void handleBuzzer() {
 
   if (buzzerOn && (now - buzzerStartTime >= buzzerDuration)) {
     digitalWrite(buzzerPin, LOW);
-    buzzerOn = false;
+    buzzerOn        = false;
     buzzerRemaining--;
     buzzerStartTime = now;
   }
-  else if (!buzzerOn && (now - buzzerStartTime >= buzzerDuration)) {
-    if (buzzerRemaining > 0) {
-      digitalWrite(buzzerPin, HIGH);
-      buzzerOn = true;
-      buzzerStartTime = now;
-    }
+  else if (!buzzerOn && buzzerRemaining > 0 && (now - buzzerStartTime >= buzzerDuration)) {
+    digitalWrite(buzzerPin, HIGH);
+    buzzerOn        = true;
+    buzzerStartTime = now;
   }
 }
 
@@ -239,48 +260,46 @@ void interruptSetup() {
 }
 
 // ===== ISR =====
+// NOTE: analogRead (~104µs) and float math are expensive inside an ISR on AVR.
+// This is a known trade-off for this sensor library approach.
+// If timing issues appear, consider moving filtering to loop() and using
+// a simple flag + raw sample buffer instead.
 ISR(TIMER2_COMPA_vect) {
 
   if (paused) return;
 
-  rawSample = analogRead(pulsePin);
-
-  filteredSignal = ALPHA * rawSample + (1.0 - ALPHA) * filteredSignal;
-  Signal = (int)filteredSignal;
+  // EMA-filtered signal
+  int rawSample  = analogRead(pulsePin);
+  filteredSignal = ALPHA * rawSample + (1.0f - ALPHA) * filteredSignal;
+  Signal         = (int)filteredSignal;
 
   sampleCounter += 2;
   unsigned long N = sampleCounter - lastBeatTime;
 
-  if (Signal < thresh && N > (IBI / 5) * 4)
+  // ---- Find trough T ----
+  if (Signal < thresh && N > (IBI / 5) * 3) {
     if (Signal < T) T = Signal;
+  }
 
-  if (Signal > thresh && Signal > P)
+  // ---- Find peak P ----
+  if (Signal > thresh && Signal > P) {
     P = Signal;
+  }
 
+  // ---- Beat detection ----
   if (N > 250) {
-    if ((Signal > thresh) && (Pulse == false) && (N > (IBI / 5) * 4)) {
+    if ((Signal > thresh) && (Pulse == false) && (N > (IBI / 5) * 3)) {
 
       int newIBI = sampleCounter - lastBeatTime;
-      if (newIBI < MIN_IBI || newIBI > MAX_IBI) return;
 
-      // Beat-to-beat validation: reject if IBI changed > 40% from last
-      if (lastIBI > 0) {
-        int diff = abs(newIBI - lastIBI);
-        if (diff > (lastIBI * 4 / 10)) {
-          // Suspicious beat — accept IBI but don't flag QS yet
-          lastIBI = newIBI;
-          lastBeatTime = sampleCounter;
-          return;
-        }
-      }
+      if (newIBI < MIN_IBI || newIBI > MAX_IBI) return;
 
       Pulse = true;
 
-      digitalWrite(blinkPin, HIGH);
+      digitalWrite(blinkPin,  HIGH);
       digitalWrite(yellowLED, HIGH);
 
-      IBI = newIBI;
-      lastIBI = newIBI;
+      IBI          = newIBI;
       lastBeatTime = sampleCounter;
 
       if (secondBeat) {
@@ -289,18 +308,17 @@ ISR(TIMER2_COMPA_vect) {
       }
 
       if (firstBeat) {
-        firstBeat = false;
+        firstBeat  = false;
         secondBeat = true;
         return;
       }
 
       unsigned long runningTotal = 0;
       for (int i = 0; i <= 8; i++) {
-        rate[i] = rate[i + 1];
+        rate[i]       = rate[i + 1];
         runningTotal += rate[i];
       }
-
-      rate[9] = IBI;
+      rate[9]       = IBI;
       runningTotal += rate[9];
       runningTotal /= 10;
       BPM = 60000 / runningTotal;
@@ -308,29 +326,33 @@ ISR(TIMER2_COMPA_vect) {
     }
   }
 
+  // ---- Reset after beat ----
   if (Signal < thresh && Pulse == true) {
-    digitalWrite(blinkPin, LOW);
+    digitalWrite(blinkPin,  LOW);
     digitalWrite(yellowLED, LOW);
     Pulse = false;
 
     amp = P - T;
-    amp = constrain(amp, 15, 700);
-    thresh = amp / 2 + T;
-    thresh = constrain(thresh, 100, 900);
+
+    // FIX: enforce minimum amp to prevent bad thresh calculation
+    if (amp < 10) amp = 10;
+
+    // FIX: constrain thresh to valid ADC range
+    thresh = constrain(amp / 2 + T, 100, 900);
 
     P = thresh;
     T = thresh;
   }
 
+  // ---- No signal timeout ----
   if (N > 2500) {
-    thresh = 512;
-    P = 512;
-    T = 512;
-    lastBeatTime = sampleCounter;
-    firstBeat = true;
-    secondBeat = false;
-    filteredSignal = 512.0;
-    lastIBI = 600;
-    noSignalFlag = true;
+    thresh         = 525;
+    P              = 512;
+    T              = 512;
+    lastBeatTime   = sampleCounter;
+    firstBeat      = true;
+    secondBeat     = false;
+    filteredSignal = 512.0f;
+    noSignalFlag   = true;
   }
 }

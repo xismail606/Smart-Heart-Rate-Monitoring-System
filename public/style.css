@@ -157,6 +157,10 @@ header {
   border-color: var(--green);
   color: var(--green);
 }
+.reset-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
 
 /* ── Paused Badge ── */
 .paused-badge {
@@ -485,4 +489,14 @@ canvas#bpmChart {
     padding: 6px 14px;
     font-size: 0.8rem;
   }
+}
+::-webkit-scrollbar {
+width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #020510;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(#a00a0a, #2c0404);
+    border-radius: 10px;
 }

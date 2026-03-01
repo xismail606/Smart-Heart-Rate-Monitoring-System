@@ -1,104 +1,147 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" dir="ltr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Real-time heart rate monitoring dashboard — Track your pulse using Arduino sensor" />
-  <meta name="theme-color" content="#0a0a0f" />
-  <title>Pulse Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💓</text></svg>">
-  <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-<div class="container">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Real-time heart rate monitoring dashboard — Track your pulse using Arduino sensor"
+    />
+    <meta name="theme-color" content="#0a0a0f" />
+    <title>Pulse Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💓</text></svg>"
+    />
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="logo">
+          <span class="logo-icon">💓</span>
+          <h1>Pulse <span>Dashboard</span></h1>
+        </div>
+        <div class="header-controls">
+          <button
+            class="ctrl-btn reset-btn"
+            id="resetBtn"
+            onclick="resetDashboard()"
+            title="Reset Session"
+          >
+            <span>🔄</span>
+            <span>Reset</span>
+          </button>
+          <button
+            class="ctrl-btn export-btn"
+            id="exportBtn"
+            onclick="exportCSV()"
+            title="Export CSV"
+          >
+            <span>📥</span>
+            <span>Export</span>
+          </button>
+          <button
+            class="ctrl-btn fullscreen-btn"
+            onclick="toggleFullscreen()"
+            title="Fullscreen"
+          >
+            <span id="fsIcon">⛶</span>
+          </button>
+          <button
+            class="ctrl-btn pause-btn"
+            id="pauseBtn"
+            onclick="togglePause()"
+          >
+            <span id="pauseIcon">⏸</span>
+            <span id="pauseText">Pause</span>
+          </button>
+          <div class="status-pill">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Waiting for connection...</span>
+          </div>
+        </div>
+      </header>
 
-  <header>
-    <div class="logo">
-      <span class="logo-icon">💓</span>
-      <h1>Pulse <span>Dashboard</span></h1>
-    </div>
-    <div class="header-controls">
-      <button class="ctrl-btn export-btn" id="exportBtn" onclick="exportCSV()" title="Export CSV">
-        <span>📥</span>
-        <span>Export</span>
-      </button>
-      <button class="ctrl-btn fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen">
-        <span id="fsIcon">⛶</span>
-      </button>
-      <button class="ctrl-btn pause-btn" id="pauseBtn" onclick="togglePause()">
-        <span id="pauseIcon">⏸</span>
-        <span id="pauseText">Pause</span>
-      </button>
-      <div class="status-pill">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="statusText">Waiting for connection...</span>
+      <div class="alert-banner" id="alertBanner">
+        <span>🚨</span>
+        <div class="msg">
+          Warning: High heart rate! <span>Please rest and relax</span>
+        </div>
+      </div>
+
+      <div class="bpm-card" id="bpmCard">
+        <div class="paused-badge" id="pausedBadge">PAUSED</div>
+        <div class="bpm-label">Heart Rate</div>
+        <div class="bpm-value" id="bpmValue">---</div>
+        <div class="bpm-unit">BPM</div>
+        <div class="waiting" id="waitingMsg">
+          Place your finger on the sensor...
+        </div>
+      </div>
+
+      <div class="session-bar">
+        <div>
+          <span class="label">⏱ Session Start: </span
+          ><span class="value" id="sessionStart">--:--:--</span>
+        </div>
+        <div>
+          <span class="label">⏳ Duration: </span
+          ><span class="value" id="sessionDuration">00:00</span>
+        </div>
+        <div>
+          <span class="label">📊 Readings: </span
+          ><span class="value" id="readingCount">0</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Status</div>
+          <div class="stat-value" id="statusValue">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Max</div>
+          <div class="stat-value" id="maxValue">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Min</div>
+          <div class="stat-value" id="minValue">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Average</div>
+          <div class="stat-value" id="avgValue">—</div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">📈 Pulse Log — Last 30 Readings</span>
+        </div>
+        <canvas id="bpmChart"></canvas>
+      </div>
+
+      <div class="footer">
+        PULSE DASHBOARD v1.0 — Real-time Heart Rate Monitor by x606
       </div>
     </div>
-  </header>
 
-  <div class="alert-banner" id="alertBanner">
-    <span>🚨</span>
-    <div class="msg">Warning: High heart rate! <span>Please rest and relax</span></div>
-  </div>
-
-  <div class="bpm-card" id="bpmCard">
-    <div class="paused-badge" id="pausedBadge">PAUSED</div>
-    <div class="bpm-label">Heart Rate</div>
-    <div class="bpm-value" id="bpmValue">---</div>
-    <div class="bpm-unit">BPM</div>
-    <div class="waiting" id="waitingMsg">Place your finger on the sensor...</div>
-  </div>
-
-  <div class="session-bar">
-    <div><span class="label">⏱ Session Start: </span><span class="value" id="sessionStart">--:--:--</span></div>
-    <div><span class="label">⏳ Duration: </span><span class="value" id="sessionDuration">00:00</span></div>
-    <div><span class="label">📊 Readings: </span><span class="value" id="readingCount">0</span></div>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat-card">
-      <div class="stat-label">Status</div>
-      <div class="stat-value" id="statusValue">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Max</div>
-      <div class="stat-value" id="maxValue">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Min</div>
-      <div class="stat-value" id="minValue">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Average</div>
-      <div class="stat-value" id="avgValue">—</div>
-    </div>
-  </div>
-
-  <div class="chart-card">
-    <div class="chart-header">
-      <span class="chart-title">📈 Pulse Log — Last 30 Readings</span>
-    </div>
-    <canvas id="bpmChart"></canvas>
-  </div>
-
-  <div class="footer">
-    PULSE DASHBOARD v1.0 — Real-time Heart Rate Monitor by x606
-  </div>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-  // Chart.js CDN fallback
-  if (typeof Chart === 'undefined') {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
-    document.head.appendChild(s);
-  }
-</script>
-<script src="app.js"></script>
-</body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+      // Chart.js CDN fallback
+      if (typeof Chart === "undefined") {
+        const s = document.createElement("script");
+        s.src =
+          "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js";
+        document.head.appendChild(s);
+      }
+    </script>
+    <script src="app.js"></script>
+  </body>
 </html>
