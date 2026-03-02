@@ -113,6 +113,10 @@ The system is designed for health monitoring, educational demonstrations, and Io
 | Buzzer              | `D2`        |
 | Onboard LED         | `D13`       |
 
+## Circuit Wiring Diagram
+
+![Circuit Diagram](https://raw.githubusercontent.com/xismail606/Smart-Heart-Rate-Monitoring-System/main/Arduino/606.png)
+
 ---
 
 ## 💻 Software Requirements
