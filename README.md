@@ -1,3 +1,12 @@
+<!-- ===================== HEADER ===================== -->
+<div align="center">
+  <img 
+    src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0f,100:ff2d55&text=Pulse%20Dashboard&height=140&section=header"
+    alt="Pulse Dashboard Header"
+    width="100%"
+  />
+</div>
+
 <p align="center">
   <img src="https://img.shields.io/badge/💓-Pulse%20Dashboard-ff2d55?style=for-the-badge&labelColor=0a0a0f" alt="Pulse Dashboard" />
 </p>
@@ -28,8 +37,6 @@
 - [How It Works](#-how-it-works)
 - [API & Socket Events](#-api--socket-events)
 - [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
@@ -67,9 +74,9 @@ The system is designed for health monitoring, educational demonstrations, and Io
 ┌─────────────┐    Serial (USB)    ┌─────────────┐    WebSocket    ┌─────────────┐
 │   Arduino   │ ─────────────────► │  Node.js    │ ──────────────► │  Browser    │
 │  + Pulse    │ ◄───────────────── │  Server     │ ◄────────────── │  Dashboard  │
-│  Sensor     │   (PAUSE/RESUME/   │ (Express +  │  (Socket.IO)   │ (HTML/CSS/  │
-│             │    RESET commands)  │  Socket.IO) │                │  Chart.js)  │
-└─────────────┘                    └─────────────┘                └─────────────┘
+│  Sensor     │   (PAUSE/RESUME/   │ (Express +  │  (Socket.IO)    │ (HTML/CSS/  │
+│             │   RESET commands)  │  Socket.IO) │                 │  Chart.js)  │
+└─────────────┘                    └─────────────┘                 └─────────────┘
      A0 pin                         Port 3000                     localhost:3000
 ```
 
@@ -85,13 +92,15 @@ The system is designed for health monitoring, educational demonstrations, and Io
 
 ## 🔧 Hardware Requirements
 
-| Component           | Specification                                                 |
-| ------------------- | ------------------------------------------------------------- |
-| **Microcontroller** | Arduino UNO (or compatible ATmega328P board)                  |
-| **Pulse Sensor**    | Analog Pulse Sensor (e.g., PulseSensor.com)                   |
-| **LEDs**            | Green (pin 7), Yellow (pin 6), Blue (pin 5), Onboard (pin 13) |
-| **Buzzer**          | Active buzzer on pin 2                                        |
-| **USB Cable**       | Type-A to Type-B (for Arduino UNO)                            |
+| Component           | Specification                                                                 |
+| ------------------- | ----------------------------------------------------------------------------- |
+| **Microcontroller** | Arduino UNO (or compatible ATmega328P board)                                  |
+| **Pulse Sensor**    | Analog Pulse Sensor (e.g., PulseSensor.com)                                   |
+| **Capacitor**       | 220 nF — Reduces noise and smooths the sensor signal                          |
+| **Resistors**       | 220Ω or 330Ω — Limit the current flowing through LEDs and protect the circuit |
+| **LEDs**            | Green (pin 7), Yellow (pin 6), Blue (pin 5), Onboard (pin 13)                 |
+| **Buzzer**          | Active buzzer on pin 2                                                        |
+| **USB Cable**       | Type-A to Type-B (for Arduino UNO)                                            |
 
 ### Wiring Diagram
 
@@ -154,6 +163,7 @@ SERVER_PORT=3000
 
 ```bash
 npm start
+node server.js
 ```
 
 ### 6. Open the Dashboard
@@ -298,22 +308,22 @@ pulse-dashboard/
 
 ---
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -m "Add my feature"`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
----
+<!-- ===================== AUTHOR ===================== -->
+<h2 align="center"> 👤 Author </h2>
 
 <p align="center">
-  Made with 💓 by <strong>x606</strong>
+<strong>x606</strong><br>
+Penetration Testing Enthusiast<br>
+ • Offensive Security • Red Team Fundamentals •
 </p>
+
+---
+
+<!-- ===================== FOOTER ===================== -->
+<div align="center">
+  <img 
+    src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=110&section=footer"
+    alt="GitHub Footer"
+    width="100%"
+  />
+</div>

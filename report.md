@@ -79,16 +79,17 @@ The system follows a **three-tier architecture**:
 
 ### 3.1 Components Used
 
-| #   | Component                | Quantity | Purpose                                       |
-| --- | ------------------------ | -------- | --------------------------------------------- |
-| 1   | Arduino UNO (ATmega328P) | 1        | Main microcontroller                          |
-| 2   | Analog Pulse Sensor      | 1        | Heart rate detection via photoplethysmography |
-| 3   | Green LED                | 1        | Normal heart rate indicator (pin D7)          |
-| 4   | Yellow LED               | 1        | Beat flash indicator (pin D6)                 |
-| 5   | Blue LED                 | 1        | High heart rate indicator (pin D5)            |
-| 6   | Active Buzzer            | 1        | Audio alarm for abnormal BPM (pin D2)         |
-| 7   | USB Cable (Type-A to B)  | 1        | Serial communication & power                  |
-| 8   | Resistors (220Ω)         | 3        | Current limiting for LEDs                     |
+| #   | Component                | Quantity | Purpose                                                        |
+| --- | ------------------------ | -------- | -------------------------------------------------------------- |
+| 1   | Arduino UNO (ATmega328P) | 1        | Main microcontroller                                           |
+| 2   | Analog Pulse Sensor      | 1        | Heart rate detection via photoplethysmography                  |
+| 3   | Capacitor (220 nF)       | 1        | Reduces noise and smooths the sensor signal                    |
+| 4   | Resistors (220Ω or 330Ω) | 3        | Limit the current flowing through LEDs and protect the circuit |
+| 5   | Green LED                | 1        | Normal heart rate indicator (pin D7)                           |
+| 6   | Yellow LED               | 1        | Beat flash indicator (pin D6)                                  |
+| 7   | Blue LED                 | 1        | High heart rate indicator (pin D5)                             |
+| 8   | Active Buzzer            | 1        | Audio alarm for abnormal BPM (pin D2)                          |
+| 9   | USB Cable (Type-A to B)  | 1        | Serial communication & power                                   |
 
 ### 3.2 Pin Configuration
 
