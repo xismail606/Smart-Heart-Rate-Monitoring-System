@@ -11,14 +11,14 @@
 
 ### 1.1 Project Overview
 
-The **Pulse Dashboard** is a complete IoT-based heart rate monitoring system that bridges the gap between hardware sensing and modern web visualization. The system uses an **Arduino UNO** microcontroller with an analog pulse sensor to capture real-time heart rate data, which is then streamed to a beautifully designed web dashboard through a **Node.js** server.
+The **Pulse Dashboard** is a complete IoT-based heart rate and body temperature monitoring system that bridges the gap between hardware sensing and modern web visualization. The system uses an **Arduino UNO** microcontroller with an analog pulse sensor and a **DS18B20 digital temperature sensor** to capture real-time health data, which is then streamed to a beautifully designed web dashboard through a **Node.js** server.
 
 ### 1.2 Objectives
 
-- Build a reliable, real-time heart rate monitoring system using affordable hardware
-- Create a modern, responsive web interface for data visualization
+- Build a reliable, real-time heart rate and body temperature monitoring system using affordable hardware
+- Create a modern, responsive web interface for dual-sensor data visualization
 - Implement bi-directional communication between hardware and software
-- Provide health status classification and alert mechanisms
+- Provide health status classification and alert mechanisms (high BPM + fever detection)
 - Enable session management and data export capabilities
 
 ### 1.3 Target Users
@@ -38,8 +38,8 @@ The system follows a **three-tier architecture**:
 
 ```
 ┌────────────────────┐
-│   HARDWARE LAYER   │    Arduino UNO + Pulse Sensor + LEDs + Buzzer
-│   (Data Capture)   │    Samples at 500Hz using Timer2 ISR
+│   HARDWARE LAYER   │    Arduino UNO + Pulse Sensor + DS18B20 + LEDs + Buzzer
+│   (Data Capture)   │    Samples at 500Hz (pulse) + every 2s (temperature)
 └────────┬───────────┘
          │  Serial (USB — 115200 baud)
          ▼
@@ -51,7 +51,7 @@ The system follows a **three-tier architecture**:
          ▼
 ┌────────────────────┐
 │   CLIENT LAYER     │    HTML5 + CSS3 + JavaScript + Chart.js
-│   (Visualization)  │    Real-time dashboard with controls
+│   (Visualization)  │    Real-time dashboard with dual charts & controls
 └────────────────────┘
 ```
 
@@ -67,6 +67,7 @@ The system follows a **three-tier architecture**:
 **Arduino → Server:**
 
 - `BPM:<integer>` — Heart rate value (e.g., `BPM:72`)
+- `TEMP:<float>` — Temperature in °C (e.g., `TEMP:36.5`)
 - `STATUS:<state>` — Status message (e.g., `STATUS:READY`, `STATUS:NO_SIGNAL`)
 
 **Server → Arduino:**
@@ -83,24 +84,27 @@ The system follows a **three-tier architecture**:
 | --- | ------------------------ | -------- | -------------------------------------------------------------- |
 | 1   | Arduino UNO (ATmega328P) | 1        | Main microcontroller                                           |
 | 2   | Analog Pulse Sensor      | 1        | Heart rate detection via photoplethysmography                  |
-| 3   | Capacitor (220 nF)       | 1        | Reduces noise and smooths the sensor signal                    |
-| 4   | Resistors (220Ω or 330Ω) | 3        | Limit the current flowing through LEDs and protect the circuit |
-| 5   | Green LED                | 1        | Normal heart rate indicator (pin D7)                           |
-| 6   | Yellow LED               | 1        | Beat flash indicator (pin D6)                                  |
-| 7   | Blue LED                 | 1        | High heart rate indicator (pin D5)                             |
-| 8   | Active Buzzer            | 1        | Audio alarm for abnormal BPM (pin D2)                          |
-| 9   | USB Cable (Type-A to B)  | 1        | Serial communication & power                                   |
+| 3   | DS18B20 Temp Sensor      | 1        | Digital temperature measurement (±0.5°C accuracy)              |
+| 4   | 4.7kΩ Resistor           | 1        | Pull-up resistor for DS18B20 data line                         |
+| 5   | Capacitor (220 nF)       | 1        | Reduces noise and smooths the sensor signal                    |
+| 6   | Resistors (220Ω or 330Ω) | 3        | Limit the current flowing through LEDs and protect the circuit |
+| 7   | Green LED                | 1        | Normal heart rate indicator (pin D7)                           |
+| 8   | Yellow LED               | 1        | Beat flash indicator (pin D6)                                  |
+| 9   | Blue LED                 | 1        | High heart rate indicator (pin D5)                             |
+| 10  | Active Buzzer            | 1        | Audio alarm for abnormal BPM (pin D2)                          |
+| 11  | USB Cable (Type-A to B)  | 1        | Serial communication & power                                   |
 
 ### 3.2 Pin Configuration
 
-| Arduino Pin | Connected To        | Mode           |
-| ----------- | ------------------- | -------------- |
-| A0          | Pulse Sensor Signal | Analog Input   |
-| D2          | Active Buzzer       | Digital Output |
-| D5          | Blue LED            | Digital Output |
-| D6          | Yellow LED          | Digital Output |
-| D7          | Green LED           | Digital Output |
-| D13         | Onboard LED         | Digital Output |
+| Arduino Pin | Connected To        | Mode              |
+| ----------- | ------------------- | ----------------- |
+| A0          | Pulse Sensor Signal | Analog Input      |
+| D4          | DS18B20 DATA        | Digital (OneWire) |
+| D2          | Active Buzzer       | Digital Output    |
+| D5          | Blue LED            | Digital Output    |
+| D6          | Yellow LED          | Digital Output    |
+| D7          | Green LED           | Digital Output    |
+| D13         | Onboard LED         | Digital Output    |
 
 ### 3.3 Signal Processing Pipeline
 
@@ -124,15 +128,15 @@ Raw Analog ─► EMA Filter ─► Peak/Trough ─► Beat Detection ─► IBI
 
 **Technology:** Node.js with Express, Socket.IO, and SerialPort
 
-| Feature             | Implementation                                                |
-| ------------------- | ------------------------------------------------------------- |
-| Static File Serving | Express serves `public/` directory                            |
-| Serial Connection   | `SerialPort` library with `ReadlineParser` (`\r\n` delimiter) |
-| Data Parsing        | Regex-based parsing of `BPM:` and `STATUS:` prefixes          |
-| Data Validation     | BPM range check: `> 0` and `< 300`                            |
-| Command Validation  | Whitelist: `['pause', 'resume', 'reset']`                     |
-| Auto-Reconnect      | Up to 10 retries with 3-second delay                          |
-| Configuration       | Environment variables via `.env` file                         |
+| Feature             | Implementation                                                 |
+| ------------------- | -------------------------------------------------------------- |
+| Static File Serving | Express serves `public/` directory                             |
+| Serial Connection   | `SerialPort` library with `ReadlineParser` (`\r\n` delimiter)  |
+| Data Parsing        | Regex-based parsing of `BPM:`, `TEMP:`, and `STATUS:` prefixes |
+| Data Validation     | BPM: `> 0` and `< 300`; Temp: `> -50` and `< 125`              |
+| Command Validation  | Whitelist: `['pause', 'resume', 'reset']`                      |
+| Auto-Reconnect      | Up to 10 retries with 3-second delay                           |
+| Configuration       | Environment variables via `.env` file                          |
 
 **Key Design Decisions:**
 
@@ -161,6 +165,7 @@ Raw Analog ─► EMA Filter ─► Peak/Trough ─► Beat Detection ─► IBI
 | `--green`  | `#00ff88` | Normal status                |
 | `--yellow` | `#ffd60a` | Caution/paused               |
 | `--blue`   | `#5ac8fa` | Secondary accent             |
+| `--orange` | `#ff9500` | Temperature theme            |
 
 **Key CSS Features:**
 
@@ -172,28 +177,31 @@ Raw Analog ─► EMA Filter ─► Peak/Trough ─► Beat Detection ─► IBI
 
 **Animations:**
 
-| Animation   | Duration      | Target                                 |
-| ----------- | ------------- | -------------------------------------- |
-| `heartbeat` | 1s infinite   | Logo icon — mimics a real heartbeat    |
-| `beat-pop`  | 0.3s          | BPM value — scales on each new reading |
-| `pulse-dot` | 1s infinite   | Status dot — blinks when active        |
-| `blink`     | 1.5s infinite | Waiting message — fade in/out          |
+| Animation    | Duration      | Target                                 |
+| ------------ | ------------- | -------------------------------------- |
+| `heartbeat`  | 1s infinite   | Logo icon — mimics a real heartbeat    |
+| `beat-pop`   | 0.3s          | BPM value — scales on each new reading |
+| `pulse-dot`  | 1s infinite   | Status dot — blinks when active        |
+| `blink`      | 1.5s infinite | Waiting message — fade in/out          |
+| `temp-pulse` | 2s infinite   | Temperature icon — subtle scale pulse  |
 
 #### 4.2.3 JavaScript (`app.js`)
 
 **State Management:**
 
 - `isPaused` — tracks pause/resume state
-- `maxBPM`, `minBPM`, `allBPMs[]` — statistical accumulators
+- `maxBPM`, `minBPM`, `allBPMs[]` — BPM statistical accumulators
+- `maxTemp`, `minTemp`, `allTemps[]` — temperature statistical accumulators
 - `sessionStart`, `sessionTimerInterval` — session tracking
 - `lastAlertTime` — throttle for alert sound (5-second minimum gap)
 
 **Chart.js Configuration:**
 
-- Line chart with 30-point sliding window
-- Dynamic Y-axis: `suggestedMin = min - 15`, `suggestedMax = max + 15`
+- Two line charts (BPM + Temperature) with 30-point sliding windows
+- Dynamic Y-axis: auto-adjusts to data range
 - 400ms animation duration per update
 - Custom tooltip styling matching the dark theme
+- Temperature chart uses orange theme (`#ff9500`)
 
 **Audio Alert:**
 
@@ -211,12 +219,14 @@ The central dashboard card shows the current BPM value in large monospace font w
 
 ### 5.2 Statistics Panel
 
-Four stat cards display:
+Four BPM stat cards + two temperature stat cards display:
 
 - **Status** — Color-coded health classification (Low/Normal/High/Danger)
 - **Max** — Highest BPM recorded in the session
 - **Min** — Lowest BPM recorded in the session
 - **Average** — Running average of the last 200 readings
+- **Temp Max** — Highest temperature recorded (orange-themed)
+- **Temp Min** — Lowest temperature recorded (orange-themed)
 
 ### 5.3 Live Chart
 
@@ -227,6 +237,15 @@ A Chart.js line chart plots the last 30 BPM readings with:
 - Auto-scaling axes based on data range
 - Custom tooltips in the "Space Mono" font
 
+### 5.4 Temperature Monitoring
+
+The DS18B20 temperature sensor provides:
+
+- **Real-time display** — Large orange-themed temperature value with °C unit
+- **Fever detection** — Alert banner when temperature > 37.5°C
+- **Temperature chart** — Separate line chart (orange theme) alongside BPM chart
+- **Status badges** — Low (< 36°C, blue), Normal (36–37.5°C, green), Fever (> 37.5°C, orange)
+
 ### 5.4 Session Management
 
 - **Session Start** — Timestamp of the first BPM reading
@@ -234,21 +253,22 @@ A Chart.js line chart plots the last 30 BPM readings with:
 - **Reading Count** — Total number of readings in the session
 - **Reset** — Clears all data and restarts the session
 
-### 5.5 CSV Export
+### 5.6 CSV Export
 
 Exports a UTF-8 CSV file with BOM containing:
 
-- Index, BPM value, and status label for each reading
-- Summary statistics (Min, Max, Average, Total Readings)
+- Index, BPM value, status label, and temperature for each reading
+- Summary statistics (Min/Max/Average BPM + Min/Max/Average Temperature)
 - Filename format: `pulse-data-YYYY-MM-DD.csv`
 
-### 5.6 Alert System
+### 5.7 Alert System
 
-- **Visual:** Red border + glow on BPM card, alert banner with warning message
+- **BPM Alert:** Red border + glow on BPM card, alert banner with warning message
+- **Fever Alert:** Orange border + glow on temperature card, fever banner
 - **Audio:** 880Hz sine wave beep via Web Audio API
 - **Throttle:** Minimum 5-second gap between audio alerts
 
-### 5.7 Arduino LED/Buzzer Feedback
+### 5.8 Arduino LED/Buzzer Feedback
 
 | BPM Range | Green LED | Blue LED | Buzzer  |
 | --------- | --------- | -------- | ------- |
@@ -264,6 +284,7 @@ Exports a UTF-8 CSV file with BOM containing:
 | -------------- | --------------------------- | ---------- | ------------------------------------- |
 | Hardware       | Arduino UNO                 | ATmega328P | Microcontroller                       |
 | Firmware       | Arduino C++                 | —          | Sensor reading, ISR, serial protocol  |
+| Temp Sensor    | OneWire + DallasTemperature | 2.3 + 3.9  | DS18B20 temperature reading           |
 | Server Runtime | Node.js                     | 18+        | Server-side JavaScript                |
 | Web Framework  | Express                     | 4.18.2     | Static file serving & HTTP            |
 | WebSocket      | Socket.IO                   | 4.6.1      | Real-time bidirectional communication |
@@ -307,6 +328,8 @@ Exports a UTF-8 CSV file with BOM containing:
 - ✅ Fullscreen toggle works in Chrome, Firefox, and Edge
 - ✅ Responsive layout tested on 320px – 1920px viewports
 - ✅ Alert banner and sound trigger at BPM > 100
+- ✅ Temperature card, chart, and fever alert work correctly
+- ✅ Temperature data included in CSV export
 
 ---
 
@@ -340,14 +363,14 @@ Exports a UTF-8 CSV file with BOM containing:
 
 ## 10. Conclusion
 
-The **Pulse Dashboard** project successfully demonstrates a complete end-to-end IoT health monitoring solution. By combining affordable hardware (Arduino + analog pulse sensor) with modern web technologies (Node.js, Socket.IO, Chart.js), the system delivers a reliable, real-time heart rate monitoring experience with a professional-grade user interface.
+The **Pulse Dashboard** project successfully demonstrates a complete end-to-end IoT health monitoring solution. By combining affordable hardware (Arduino + analog pulse sensor + DS18B20 temperature sensor) with modern web technologies (Node.js, Socket.IO, Chart.js), the system delivers a reliable, real-time heart rate and body temperature monitoring experience with a professional-grade user interface.
 
 The project showcases proficiency in:
 
-- **Embedded Systems** — Timer-based ISR, EMA signal filtering, adaptive beat detection
+- **Embedded Systems** — Timer-based ISR, EMA signal filtering, adaptive beat detection, OneWire temperature sensing
 - **Full-Stack Development** — Node.js server, WebSocket communication, responsive frontend
-- **IoT Architecture** — Hardware-software integration via serial protocol
-- **UI/UX Design** — Dark theme design system, animations, and accessibility
+- **IoT Architecture** — Multi-sensor hardware-software integration via serial protocol
+- **UI/UX Design** — Dark theme design system, dual-chart visualization, animations, and accessibility
 
 The modular architecture makes it extensible for future enhancements such as database integration, mobile support, and additional biosensor inputs.
 

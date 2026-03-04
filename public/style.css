@@ -15,6 +15,9 @@
   --yellow: #ffd60a;
   --yellow-dim: rgba(255, 214, 10, 0.12);
   --blue: #5ac8fa;
+  --orange: #ff9500;
+  --orange-dim: rgba(255, 149, 0, 0.15);
+  --orange-glow: rgba(255, 149, 0, 0.4);
   --text: #e8e8f0;
   --muted: #5a5a7a;
   --grid: rgba(255, 45, 85, 0.04);
@@ -257,7 +260,7 @@ header {
 /* ── Stats ── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -344,9 +347,142 @@ header {
   text-transform: uppercase;
   font-family: "Space Mono", monospace;
 }
-canvas#bpmChart {
+canvas#bpmChart,
+canvas#tempChart {
   width: 100% !important;
   height: 200px !important;
+}
+
+/* ── Temperature Card ── */
+.temp-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 28px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition:
+    border-color 0.4s,
+    box-shadow 0.4s;
+}
+.temp-card.fever {
+  border-color: var(--orange);
+  box-shadow:
+    0 0 30px var(--orange-glow),
+    inset 0 0 40px var(--orange-dim);
+}
+.temp-icon {
+  font-size: 2.5rem;
+  animation: temp-pulse 2s ease-in-out infinite;
+}
+.temp-info {
+  flex: 1;
+}
+.temp-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-family: "Space Mono", monospace;
+  margin-bottom: 4px;
+}
+.temp-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.temp-value {
+  font-family: "Space Mono", monospace;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--orange);
+  line-height: 1;
+  text-shadow: 0 0 30px var(--orange-glow);
+}
+.temp-unit {
+  font-family: "Space Mono", monospace;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+.temp-status {
+  font-family: "Space Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 6px 16px;
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.temp-status.normal {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+.temp-status.fever {
+  color: var(--orange);
+  border-color: var(--orange);
+  background: var(--orange-dim);
+}
+.temp-status.low {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: rgba(90, 200, 250, 0.12);
+}
+.temp-stat .stat-value {
+  color: var(--orange);
+}
+
+/* ── Fever Banner ── */
+.fever-banner {
+  background: var(--orange-dim);
+  border: 1px solid var(--orange);
+  border-radius: 12px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.4s;
+  pointer-events: none;
+}
+.fever-banner.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.fever-banner .msg {
+  font-size: 0.95rem;
+  color: var(--orange);
+  font-weight: 700;
+}
+.fever-banner .msg span {
+  color: var(--text);
+  font-weight: 400;
+}
+
+/* ── Charts Grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.temp-chart-card {
+  border-color: rgba(255, 149, 0, 0.15);
+}
+
+@keyframes temp-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* ── Alert Banner ── */
@@ -449,7 +585,7 @@ canvas#bpmChart {
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .stats-row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
   .bpm-card {
     padding: 30px 20px;
@@ -459,8 +595,15 @@ canvas#bpmChart {
     align-items: flex-start;
     gap: 6px;
   }
-  canvas#bpmChart {
+  canvas#bpmChart,
+  canvas#tempChart {
     height: 150px !important;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .temp-card {
+    flex-wrap: wrap;
   }
 }
 
@@ -475,6 +618,9 @@ canvas#bpmChart {
   .stats-row {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+  }
+  .charts-grid {
+    grid-template-columns: 1fr;
   }
   .stat-card {
     padding: 14px;
@@ -491,12 +637,12 @@ canvas#bpmChart {
   }
 }
 ::-webkit-scrollbar {
-width: 8px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #020510;
+  background: #020510;
 }
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(#a00a0a, #2c0404);
-    border-radius: 10px;
+  background: linear-gradient(#a00a0a, #2c0404);
+  border-radius: 10px;
 }

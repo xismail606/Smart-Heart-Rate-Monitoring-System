@@ -12,7 +12,7 @@
 </p>
 
 <h1 align="center">Pulse Dashboard</h1>
-<p align="center"><strong>Real-Time Heart Rate Monitoring System</strong></p>
+<p align="center"><strong>Real-Time Heart Rate & Body Temperature Monitoring System</strong></p>
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-v18+-339933?style=flat-square&logo=node.js&logoColor=white" />
   <img src="https://img.shields.io/badge/Arduino-UNO-00979D?style=flat-square&logo=arduino&logoColor=white" />
@@ -42,7 +42,7 @@
 
 ## 🔍 Overview
 
-**Pulse Dashboard** is a full-stack, real-time heart rate monitoring system that connects an **Arduino-based pulse sensor** to a sleek, modern **web dashboard**. It reads live BPM (beats per minute) data from a pulse sensor via serial communication, processes it through a Node.js server, and streams it to a browser using WebSocket technology.
+**Pulse Dashboard** is a full-stack, real-time heart rate and body temperature monitoring system that connects an **Arduino-based pulse sensor** and **DS18B20 temperature sensor** to a sleek, modern **web dashboard**. It reads live BPM (beats per minute) and temperature data via serial communication, processes it through a Node.js server, and streams it to a browser using WebSocket technology.
 
 The system is designed for health monitoring, educational demonstrations, and IoT prototyping.
 
@@ -50,21 +50,23 @@ The system is designed for health monitoring, educational demonstrations, and Io
 
 ## ✨ Features
 
-| Feature                      | Description                                                                        |
-| ---------------------------- | ---------------------------------------------------------------------------------- |
-| 📊 **Real-Time BPM Display** | Large, animated BPM value with heartbeat animation                                 |
-| 📈 **Live Chart**            | Last 30 readings plotted on a dynamic Chart.js line graph with auto-scaling Y-axis |
-| 🔴 **High BPM Alert**        | Visual + audio alert when heart rate exceeds 100 BPM                               |
-| 📉 **Statistics Panel**      | Live Max, Min, Average BPM and health status indicator                             |
-| ⏱ **Session Timer**          | Tracks session start time, duration, and total reading count                       |
-| ⏸ **Pause / Resume**         | Pause data collection from the dashboard — sends command to Arduino                |
-| 🔄 **Reset Session**         | Full reset of all stats, chart, timer, and Arduino state                           |
-| 📥 **CSV Export**            | Export all BPM data with status labels to a `.csv` file                            |
-| ⛶ **Fullscreen Mode**        | Toggle fullscreen for distraction-free monitoring                                  |
-| 🔊 **Sound Alert**           | Web Audio API beep on high heart rate (throttled to every 5 seconds)               |
-| 🔌 **Auto-Reconnect**        | Server automatically retries serial connection up to 10 times                      |
-| 📱 **Responsive Design**     | Fully responsive layout for desktop, tablet, and mobile                            |
-| 🎨 **Premium Dark UI**       | Glassmorphism-inspired dark theme with neon accents                                |
+| Feature                      | Description                                                             |
+| ---------------------------- | ----------------------------------------------------------------------- |
+| 📊 **Real-Time BPM Display** | Large, animated BPM value with heartbeat animation                      |
+| 🌡️ **Body Temperature**      | Real-time DS18B20 temperature reading with fever detection (> 37.5°C)   |
+| 📈 **Dual Live Charts**      | BPM + Temperature charts side-by-side with auto-scaling Y-axis          |
+| 🔴 **High BPM Alert**        | Visual + audio alert when heart rate exceeds 100 BPM                    |
+| 🔥 **Fever Alert**           | Orange-themed visual alert when temperature exceeds 37.5°C              |
+| 📉 **Statistics Panel**      | Live Max, Min, Average BPM + Temp Max/Min with health status indicators |
+| ⏱ **Session Timer**          | Tracks session start time, duration, and total reading count            |
+| ⏸ **Pause / Resume**         | Pause data collection from the dashboard — sends command to Arduino     |
+| 🔄 **Reset Session**         | Full reset of all stats, charts, timer, and Arduino state               |
+| 📥 **CSV Export**            | Export all BPM + temperature data with status labels to a `.csv` file   |
+| ⛶ **Fullscreen Mode**        | Toggle fullscreen for distraction-free monitoring                       |
+| 🔊 **Sound Alert**           | Web Audio API beep on high heart rate (throttled to every 5 seconds)    |
+| 🔌 **Auto-Reconnect**        | Server automatically retries serial connection up to 10 times           |
+| 📱 **Responsive Design**     | Fully responsive layout for desktop, tablet, and mobile                 |
+| 🎨 **Premium Dark UI**       | Glassmorphism-inspired dark theme with neon accents                     |
 
 ---
 
@@ -74,17 +76,17 @@ The system is designed for health monitoring, educational demonstrations, and Io
 ┌─────────────┐    Serial (USB)    ┌─────────────┐    WebSocket    ┌─────────────┐
 │   Arduino   │ ─────────────────► │  Node.js    │ ──────────────► │  Browser    │
 │  + Pulse    │ ◄───────────────── │  Server     │ ◄────────────── │  Dashboard  │
-│  Sensor     │   (PAUSE/RESUME/   │ (Express +  │  (Socket.IO)    │ (HTML/CSS/  │
-│             │   RESET commands)  │  Socket.IO) │                 │  Chart.js)  │
+│  + DS18B20  │   (PAUSE/RESUME/   │ (Express +  │  (Socket.IO)    │ (HTML/CSS/  │
+│  Sensors    │   RESET commands)  │  Socket.IO) │                 │  Chart.js)  │
 └─────────────┘                    └─────────────┘                 └─────────────┘
-     A0 pin                         Port 3000                     localhost:3000
+  A0 + D4 pins                      Port 3000                     localhost:3000
 ```
 
 **Data Flow:**
 
-1. Arduino reads analog signal from pulse sensor on **pin A0**
+1. Arduino reads analog signal from pulse sensor on **pin A0** and temperature from DS18B20 on **pin D4**
 2. ISR (Interrupt Service Routine) samples at 500Hz, applies EMA filtering, and detects heartbeats
-3. BPM values are sent over serial as `BPM:<value>` lines
+3. BPM values are sent over serial as `BPM:<value>`, temperature as `TEMP:<value>`
 4. Node.js server parses serial data and broadcasts via Socket.IO
 5. Browser receives events and updates the dashboard in real-time
 
@@ -92,26 +94,31 @@ The system is designed for health monitoring, educational demonstrations, and Io
 
 ## 🔧 Hardware Requirements
 
-| Component           | Specification                                                                 |
-| ------------------- | ----------------------------------------------------------------------------- |
-| **Microcontroller** | Arduino UNO (or compatible ATmega328P board)                                  |
-| **Pulse Sensor**    | Analog Pulse Sensor (e.g., PulseSensor.com)                                   |
-| **Capacitor**       | 220 nF — Reduces noise and smooths the sensor signal                          |
-| **Resistors**       | 220Ω or 330Ω — Limit the current flowing through LEDs and protect the circuit |
-| **LEDs**            | Green (pin 7), Yellow (pin 6), Blue (pin 5), Onboard (pin 13)                 |
-| **Buzzer**          | Active buzzer on pin 2                                                        |
-| **USB Cable**       | Type-A to Type-B (for Arduino UNO)                                            |
+| Component               | Specification                                                                 |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| **Microcontroller**     | Arduino UNO (or compatible ATmega328P board)                                  |
+| **Pulse Sensor**        | Analog Pulse Sensor (e.g., PulseSensor.com)                                   |
+| **DS18B20 Temp Sensor** | Digital temperature sensor (waterproof or TO-92 package)                      |
+| **4.7kΩ Resistor**      | Pull-up resistor for DS18B20 data line (between VCC and DATA)                 |
+| **Capacitor**           | 220 nF — Reduces noise and smooths the sensor signal                          |
+| **Resistors**           | 220Ω or 330Ω — Limit the current flowing through LEDs and protect the circuit |
+| **LEDs**                | Green (pin 7), Yellow (pin 6), Blue (pin 5), Onboard (pin 13)                 |
+| **Buzzer**              | Active buzzer on pin 2                                                        |
+| **USB Cable**           | Type-A to Type-B (for Arduino UNO)                                            |
 
 ### Wiring Diagram
 
-| Component           | Arduino Pin |
-| ------------------- | ----------- |
-| Pulse Sensor Signal | `A0`        |
-| Green LED           | `D7`        |
-| Yellow LED          | `D6`        |
-| Blue LED            | `D5`        |
-| Buzzer              | `D2`        |
-| Onboard LED         | `D13`       |
+| Component           | Arduino Pin | Notes                        |
+| ------------------- | ----------- | ---------------------------- |
+| Pulse Sensor Signal | `A0`        | Analog input                 |
+| DS18B20 DATA        | `D4`        | 4.7kΩ pull-up to 5V required |
+| DS18B20 VCC         | `5V`        | Power                        |
+| DS18B20 GND         | `GND`       | Ground                       |
+| Green LED           | `D7`        |                              |
+| Yellow LED          | `D6`        |                              |
+| Blue LED            | `D5`        |                              |
+| Buzzer              | `D2`        |                              |
+| Onboard LED         | `D13`       |                              |
 
 ## Circuit Wiring Diagram
 
@@ -124,6 +131,7 @@ The system is designed for health monitoring, educational demonstrations, and Io
 - **Node.js** v18 or higher
 - **npm** (comes with Node.js)
 - **Arduino IDE** 1.8+ or 2.x
+- **Arduino Libraries:** OneWire (by Paul Stoffregen) + DallasTemperature (by Miles Burton)
 - **Web Browser** (Chrome, Firefox, Edge — any modern browser)
 - **Windows / macOS / Linux** (driver support for USB-to-Serial)
 
@@ -147,9 +155,10 @@ npm install
 ### 3. Upload Arduino Code
 
 1. Open `Arduino/pulse.ino` in the Arduino IDE
-2. Select **Board → Arduino UNO**
-3. Select the correct **COM Port**
-4. Click **Upload**
+2. Install required libraries: **Sketch → Include Library → Manage Libraries** → search and install **OneWire** and **DallasTemperature**
+3. Select **Board → Arduino UNO**
+4. Select the correct **COM Port**
+5. Click **Upload**
 
 ### 4. Configure Environment
 
@@ -250,25 +259,26 @@ pulse-dashboard/
 3. **EMA Filter** — Applies Exponential Moving Average (α = 0.25) to smooth the raw signal
 4. **Beat Detection** — Detects heartbeats using adaptive threshold crossing with peak/trough tracking
 5. **BPM Calculation** — Averages the last 10 inter-beat intervals (IBI) to compute stable BPM
-6. **Serial Output** — Sends `BPM:<value>` and `STATUS:<state>` messages over serial
-7. **LED Indicators** — Green (normal), Blue (high), Yellow (beat flash), Buzzer (alerts)
-8. **Command Handling** — Receives `PAUSE`, `RESUME`, `RESET` commands from the serial port
+6. **Temperature Reading** — Reads DS18B20 sensor every 2 seconds (non-blocking) via OneWire protocol
+7. **Serial Output** — Sends `BPM:<value>`, `TEMP:<value>`, and `STATUS:<state>` messages over serial
+8. **LED Indicators** — Green (normal), Blue (high), Yellow (beat flash), Buzzer (alerts)
+9. **Command Handling** — Receives `PAUSE`, `RESUME`, `RESET` commands from the serial port
 
 ### Server (`server.js`)
 
 1. **Express** serves static files from `public/`
 2. **SerialPort** reads and parses data from Arduino (line-based protocol)
-3. **Socket.IO** broadcasts BPM data and status to all connected browsers
+3. **Socket.IO** broadcasts BPM, temperature, and status data to all connected browsers
 4. **Command Relay** — Receives control commands from the browser and writes them to Arduino
 5. **Auto-Reconnect** — Retries serial connection up to 10 times with a 3-second delay
 
 ### Frontend (`app.js` + `index.html` + `style.css`)
 
-1. **Socket.IO Client** — Connects to the server and listens for `bpm`, `serial-status`, and `arduino-status` events
-2. **Chart.js** — Renders a real-time line chart with the last 30 BPM readings
-3. **Statistics Engine** — Computes max, min, and running average BPM
+1. **Socket.IO Client** — Connects to the server and listens for `bpm`, `temperature`, `serial-status`, and `arduino-status` events
+2. **Chart.js** — Renders two real-time line charts (BPM + Temperature) with 30-point sliding windows
+3. **Statistics Engine** — Computes max, min, and running average BPM + temperature max/min
 4. **Session Management** — Tracks session timer, reading count, and export data
-5. **Alert System** — Visual (banner + card glow) and audio (Web Audio API beep) alerts for high BPM
+5. **Alert System** — BPM alerts (red) + fever alerts (orange) with visual banners
 6. **Controls** — Pause/Resume, Reset, Export CSV, and Fullscreen toggle
 
 ---
@@ -280,6 +290,7 @@ pulse-dashboard/
 | Event            | Payload                                  | Description                                                   |
 | ---------------- | ---------------------------------------- | ------------------------------------------------------------- |
 | `bpm`            | `{ bpm: number, time: number }`          | New BPM reading from Arduino                                  |
+| `temperature`    | `{ temp: number, time: number }`         | New temperature reading from DS18B20 (°C)                     |
 | `serial-status`  | `{ connected: boolean, error?: string }` | Serial port connection status                                 |
 | `arduino-status` | `{ status: string, time: number }`       | Arduino status messages (CALIBRATING, READY, NO_SIGNAL, etc.) |
 
@@ -294,6 +305,7 @@ pulse-dashboard/
 | Direction        | Format           | Example        |
 | ---------------- | ---------------- | -------------- |
 | Arduino → Server | `BPM:<value>`    | `BPM:72`       |
+| Arduino → Server | `TEMP:<value>`   | `TEMP:36.5`    |
 | Arduino → Server | `STATUS:<state>` | `STATUS:READY` |
 | Server → Arduino | `<COMMAND>\n`    | `PAUSE\n`      |
 
