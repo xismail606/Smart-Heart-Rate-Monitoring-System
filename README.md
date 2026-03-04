@@ -1,17 +1,17 @@
 <!-- ===================== HEADER ===================== -->
 <div align="center">
   <img 
-    src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0f,100:ff2d55&text=Pulse%20Dashboard&height=140&section=header"
-    alt="Pulse Dashboard Header"
+    src="https://capsule-render.vercel.app/api?type=waving&color=0:0a0a0f,100:ff2d55&text=VitalSync&height=140&section=header"
+    alt="VitalSync Header"
     width="100%"
   />
 </div>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/💓-Pulse%20Dashboard-ff2d55?style=for-the-badge&labelColor=0a0a0f" alt="Pulse Dashboard" />
+  <img src="https://img.shields.io/badge/💓-VitalSync-ff2d55?style=for-the-badge&labelColor=0a0a0f" alt="VitalSync" />
 </p>
 
-<h1 align="center">Pulse Dashboard</h1>
+<h1 align="center">VitalSync</h1>
 <p align="center"><strong>Real-Time Heart Rate & Body Temperature Monitoring System</strong></p>
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-v18+-339933?style=flat-square&logo=node.js&logoColor=white" />
@@ -42,7 +42,7 @@
 
 ## 🔍 Overview
 
-**Pulse Dashboard** is a full-stack, real-time heart rate and body temperature monitoring system that connects an **Arduino-based pulse sensor** and **DS18B20 temperature sensor** to a sleek, modern **web dashboard**. It reads live BPM (beats per minute) and temperature data via serial communication, processes it through a Node.js server, and streams it to a browser using WebSocket technology.
+**VitalSync** is a full-stack, real-time heart rate and body temperature monitoring system that connects an **Arduino-based pulse sensor** and **DS18B20 temperature sensor** to a sleek, modern **web dashboard**. It reads live BPM (beats per minute) and temperature data via serial communication, processes it through a Node.js server, and streams it to a browser using WebSocket technology.
 
 The system is designed for health monitoring, educational demonstrations, and IoT prototyping.
 
@@ -245,6 +245,8 @@ pulse-dashboard/
 ├── server.js              # Node.js server (Express, Socket.IO, SerialPort bridge)
 ├── Package.json           # Node.js dependencies and scripts
 ├── .env                   # Environment variables (COM port, baud rate, server port)
+├── report.md              # Detailed project report
+├── how-it-works.md        # Quick-start guide
 └── README.md              # This file
 ```
 

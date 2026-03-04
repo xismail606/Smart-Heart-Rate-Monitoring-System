@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   Pulse Dashboard — Application Logic
+   VitalSync — Application Logic
    ══════════════════════════════════════════════ */
 
 const socket = io();
@@ -273,6 +273,7 @@ function resetDashboard() {
   document.getElementById("tempStatus").textContent = "Waiting for sensor...";
   document.getElementById("tempMaxValue").textContent = "—";
   document.getElementById("tempMinValue").textContent = "—";
+  document.getElementById("tempAvgValue").textContent = "—";
   document.getElementById("tempCard").classList.remove("fever");
   document.getElementById("feverBanner").classList.remove("visible");
 
@@ -334,7 +335,7 @@ function exportCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `pulse-data-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `vitalsync-data-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -519,9 +520,11 @@ function updateTemperature(temp, time) {
     document.getElementById("tempMinValue").textContent = minTemp.toFixed(1) + "°";
   }
 
-  // Store
+  // Store & Average
   allTemps.push(temp);
   if (allTemps.length > 200) allTemps.shift();
+  const avgTemp = (allTemps.reduce((a, b) => a + b, 0) / allTemps.length).toFixed(1);
+  document.getElementById("tempAvgValue").textContent = avgTemp + "°";
 
   // Chart — dynamic Y axis
   const cMin = Math.min(...tempDataPoints, temp);

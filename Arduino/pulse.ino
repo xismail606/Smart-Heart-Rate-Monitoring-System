@@ -86,10 +86,9 @@
 
     Serial.println("STATUS:CALIBRATING");
 
-    // Calibration: read baseline
-    long sum = 0;
+    // Calibration: warm-up period for sensor stabilization
     for (int i = 0; i < 100; i++) {
-      sum += analogRead(pulsePin);
+      analogRead(pulsePin);
       delay(10);
     }
 

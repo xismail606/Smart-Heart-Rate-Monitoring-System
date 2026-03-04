@@ -1,4 +1,4 @@
-# 📋 Pulse Dashboard — Project Report
+# 📋 VitalSync — Project Report
 
 > **Project:** Smart Heart Rate Monitoring System  
 > **Version:** 1.0.0  
@@ -11,7 +11,7 @@
 
 ### 1.1 Project Overview
 
-The **Pulse Dashboard** is a complete IoT-based heart rate and body temperature monitoring system that bridges the gap between hardware sensing and modern web visualization. The system uses an **Arduino UNO** microcontroller with an analog pulse sensor and a **DS18B20 digital temperature sensor** to capture real-time health data, which is then streamed to a beautifully designed web dashboard through a **Node.js** server.
+The **VitalSync** system is a complete IoT-based heart rate and body temperature monitoring system that bridges the gap between hardware sensing and modern web visualization. The system uses an **Arduino UNO** microcontroller with an analog pulse sensor and a **DS18B20 digital temperature sensor** to capture real-time health data, which is then streamed to a beautifully designed web dashboard through a **Node.js** server.
 
 ### 1.2 Objectives
 
@@ -219,7 +219,7 @@ The central dashboard card shows the current BPM value in large monospace font w
 
 ### 5.2 Statistics Panel
 
-Four BPM stat cards + two temperature stat cards display:
+Four BPM stat cards + three temperature stat cards display:
 
 - **Status** — Color-coded health classification (Low/Normal/High/Danger)
 - **Max** — Highest BPM recorded in the session
@@ -227,6 +227,7 @@ Four BPM stat cards + two temperature stat cards display:
 - **Average** — Running average of the last 200 readings
 - **Temp Max** — Highest temperature recorded (orange-themed)
 - **Temp Min** — Lowest temperature recorded (orange-themed)
+- **Avg Temp** — Running average temperature (orange-themed)
 
 ### 5.3 Live Chart
 
@@ -246,7 +247,7 @@ The DS18B20 temperature sensor provides:
 - **Temperature chart** — Separate line chart (orange theme) alongside BPM chart
 - **Status badges** — Low (< 36°C, blue), Normal (36–37.5°C, green), Fever (> 37.5°C, orange)
 
-### 5.4 Session Management
+### 5.5 Session Management
 
 - **Session Start** — Timestamp of the first BPM reading
 - **Duration** — Live counter updated every second
@@ -259,7 +260,7 @@ Exports a UTF-8 CSV file with BOM containing:
 
 - Index, BPM value, status label, and temperature for each reading
 - Summary statistics (Min/Max/Average BPM + Min/Max/Average Temperature)
-- Filename format: `pulse-data-YYYY-MM-DD.csv`
+- Filename format: `vitalsync-data-YYYY-MM-DD.csv`
 
 ### 5.7 Alert System
 
@@ -363,7 +364,7 @@ Exports a UTF-8 CSV file with BOM containing:
 
 ## 10. Conclusion
 
-The **Pulse Dashboard** project successfully demonstrates a complete end-to-end IoT health monitoring solution. By combining affordable hardware (Arduino + analog pulse sensor + DS18B20 temperature sensor) with modern web technologies (Node.js, Socket.IO, Chart.js), the system delivers a reliable, real-time heart rate and body temperature monitoring experience with a professional-grade user interface.
+The **VitalSync** project successfully demonstrates a complete end-to-end IoT health monitoring solution. By combining affordable hardware (Arduino + analog pulse sensor + DS18B20 temperature sensor) with modern web technologies (Node.js, Socket.IO, Chart.js), the system delivers a reliable, real-time heart rate and body temperature monitoring experience with a professional-grade user interface.
 
 The project showcases proficiency in:
 
@@ -377,6 +378,6 @@ The modular architecture makes it extensible for future enhancements such as dat
 ---
 
 <p align="center">
-  <em>Pulse Dashboard v1.0.0 — Smart Heart Rate Monitoring System</em><br>
+  <em>VitalSync v1.0.0 — Smart Health Monitoring System</em><br>
   <strong>Made with 💓 by x606</strong>
 </p>

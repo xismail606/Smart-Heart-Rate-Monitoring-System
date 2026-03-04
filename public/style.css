@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════
-   Pulse Dashboard — Design System
+   VitalSync — Design System
    ══════════════════════════════════════════════ */
 
 :root {
@@ -260,7 +260,7 @@ header {
 /* ── Stats ── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
 }

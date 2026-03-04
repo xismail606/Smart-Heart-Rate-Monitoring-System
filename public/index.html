@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Real-time heart rate monitoring dashboard — Track your pulse using Arduino sensor"
+      content="Real-time heart rate & body temperature monitoring dashboard — Track your pulse and temperature using Arduino sensors"
     />
     <meta name="theme-color" content="#0a0a0f" />
-    <title>Pulse Dashboard</title>
+    <title>VitalSync</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap"
@@ -26,7 +26,7 @@
       <header>
         <div class="logo">
           <span class="logo-icon">💓</span>
-          <h1>Pulse <span>Dashboard</span></h1>
+          <h1>Vital<span>Sync</span></h1>
         </div>
         <div class="header-controls">
           <button
@@ -146,12 +146,16 @@
           <div class="stat-label">🌡️ Temp Min</div>
           <div class="stat-value" id="tempMinValue">—</div>
         </div>
+        <div class="stat-card temp-stat">
+          <div class="stat-label">🌡️ Avg Temp</div>
+          <div class="stat-value" id="tempAvgValue">—</div>
+        </div>
       </div>
 
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <span class="chart-title">📈 Pulse Log — Last 30 Readings</span>
+            <span class="chart-title">📈 BPM Log — Last 30 Readings</span>
           </div>
           <canvas id="bpmChart"></canvas>
         </div>
@@ -166,7 +170,7 @@
       </div>
 
       <div class="footer">
-        PULSE DASHBOARD v1.0 — Real-time Heart Rate Monitor by x606
+        VITALSYNC v1.0 — Real-time Heart Rate & Temperature Monitor by x606
       </div>
     </div>
 
