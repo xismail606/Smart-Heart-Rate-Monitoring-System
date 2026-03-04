@@ -45,6 +45,12 @@ function connectSerial() {
           console.log(`💓 BPM = ${bpm}`);
           io.emit('bpm', { bpm, time: Date.now() });
         }
+      } else if (line.startsWith('TEMP:')) {
+        const temp = parseFloat(line.replace('TEMP:', ''));
+        if (!isNaN(temp) && temp > -50 && temp < 125) {
+          console.log(`🌡️  Temp = ${temp}°C`);
+          io.emit('temperature', { temp, time: Date.now() });
+        }
       } else if (line.startsWith('STATUS:')) {
         const status = line.replace('STATUS:', '').trim();
         console.log(`📡 Arduino Status: ${status}`);

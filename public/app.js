@@ -62,6 +62,67 @@ const chart = new Chart(ctx, {
   },
 });
 
+// ── Temperature Chart Setup ──
+const tempLabels = [],
+  tempDataPoints = [];
+const tempCtx = document.getElementById("tempChart").getContext("2d");
+
+const tempChart = new Chart(tempCtx, {
+  type: "line",
+  data: {
+    labels: tempLabels,
+    datasets: [
+      {
+        label: "Temp °C",
+        data: tempDataPoints,
+        borderColor: "#ff9500",
+        backgroundColor: "rgba(255,149,0,0.08)",
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#ff9500",
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: "#fff",
+        tension: 0.4,
+        fill: true,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 400 },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#111118",
+        borderColor: "#ff9500",
+        borderWidth: 1,
+        titleColor: "#ff9500",
+        bodyColor: "#e8e8f0",
+        titleFont: { family: "Space Mono" },
+        bodyFont: { family: "Space Mono" },
+        displayColors: false,
+        callbacks: {
+          label: (ctx) => `${ctx.parsed.y}°C`,
+        },
+      },
+    },
+    scales: {
+      x: { display: false },
+      y: {
+        grid: { color: "rgba(255,255,255,0.04)" },
+        ticks: {
+          color: "#5a5a7a",
+          font: { family: "Space Mono", size: 11 },
+          callback: (v) => v + "°",
+        },
+        suggestedMin: 30,
+        suggestedMax: 42,
+      },
+    },
+  },
+});
+
 // ── State ──
 let isPaused = false;
 let maxBPM = 0,
@@ -72,6 +133,12 @@ let hasData = false,
 let sessionStart = null;
 let sessionTimerInterval = null;
 let alertSoundEnabled = true;
+
+// ── Temperature State ──
+let lastTemp = null;
+let maxTemp = -Infinity,
+  minTemp = Infinity;
+let allTemps = [];
 
 // ── Audio Context for Alert Sound ──
 let audioCtx = null;
@@ -192,6 +259,23 @@ function resetDashboard() {
   document.getElementById("bpmCard").classList.remove("alert");
   document.getElementById("alertBanner").classList.remove("visible");
 
+  // Reset temperature state
+  lastTemp = null;
+  maxTemp = -Infinity;
+  minTemp = Infinity;
+  allTemps = [];
+  tempLabels.length = 0;
+  tempDataPoints.length = 0;
+  tempChart.options.scales.y.suggestedMin = 30;
+  tempChart.options.scales.y.suggestedMax = 42;
+  tempChart.update();
+  document.getElementById("tempValue").textContent = "--.-";
+  document.getElementById("tempStatus").textContent = "Waiting for sensor...";
+  document.getElementById("tempMaxValue").textContent = "—";
+  document.getElementById("tempMinValue").textContent = "—";
+  document.getElementById("tempCard").classList.remove("fever");
+  document.getElementById("feverBanner").classList.remove("visible");
+
   // Reset session timer
   if (sessionTimerInterval) clearInterval(sessionTimerInterval);
   sessionTimerInterval = null;
@@ -225,19 +309,26 @@ function resetDashboard() {
 function exportCSV() {
   if (allBPMs.length === 0) return;
 
-  let csv = "Index,BPM,Status\n";
+  let csv = "Index,BPM,Status,Temperature(°C)\n";
   allBPMs.forEach((bpm, i) => {
     let status = "Normal";
     if (bpm < 60) status = "Low";
     else if (bpm > 140) status = "Danger";
     else if (bpm > 100) status = "High";
-    csv += `${i + 1},${bpm},${status}\n`;
+    const temp = allTemps[i] !== undefined ? allTemps[i] : "N/A";
+    csv += `${i + 1},${bpm},${status},${temp}\n`;
   });
 
-  csv += `\nMin,${minBPM === Infinity ? "N/A" : minBPM}\n`;
-  csv += `Max,${maxBPM}\n`;
-  csv += `Average,${Math.round(allBPMs.reduce((a, b) => a + b, 0) / allBPMs.length)}\n`;
+  csv += `\nMin BPM,${minBPM === Infinity ? "N/A" : minBPM}\n`;
+  csv += `Max BPM,${maxBPM}\n`;
+  csv += `Average BPM,${Math.round(allBPMs.reduce((a, b) => a + b, 0) / allBPMs.length)}\n`;
   csv += `Total Readings,${allBPMs.length}\n`;
+  if (allTemps.length > 0) {
+    csv += `Min Temp,${minTemp === Infinity ? "N/A" : minTemp}°C\n`;
+    csv += `Max Temp,${maxTemp === -Infinity ? "N/A" : maxTemp}°C\n`;
+    const avgTemp = (allTemps.reduce((a, b) => a + b, 0) / allTemps.length).toFixed(1);
+    csv += `Average Temp,${avgTemp}°C\n`;
+  }
 
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -301,6 +392,12 @@ socket.on("arduino-status", ({ status }) => {
 socket.on("bpm", ({ bpm, time }) => {
   lastBPM = bpm;
   if (!isPaused) updateDashboard(bpm, time);
+});
+
+// ── Temperature Socket Event ──
+socket.on("temperature", ({ temp, time }) => {
+  lastTemp = temp;
+  if (!isPaused) updateTemperature(temp, time);
 });
 
 // ── Update Dashboard ──
@@ -386,4 +483,59 @@ function updateDashboard(bpm, time) {
   if (!isPaused) {
     document.getElementById("statusText").textContent = `Last update ${label}`;
   }
+}
+
+// ── Update Temperature ──
+function updateTemperature(temp, time) {
+  // Update display value
+  const tempEl = document.getElementById("tempValue");
+  tempEl.textContent = temp.toFixed(1);
+
+  // Fever detection (> 37.5°C)
+  const isFever = temp > 37.5;
+  document.getElementById("tempCard").classList.toggle("fever", isFever);
+  document.getElementById("feverBanner").classList.toggle("visible", isFever);
+
+  // Temperature status
+  const ts = document.getElementById("tempStatus");
+  if (temp < 36.0) {
+    ts.textContent = "Low";
+    ts.className = "temp-status low";
+  } else if (temp <= 37.5) {
+    ts.textContent = "Normal";
+    ts.className = "temp-status normal";
+  } else {
+    ts.textContent = "Fever ⚠";
+    ts.className = "temp-status fever";
+  }
+
+  // Max / Min
+  if (temp > maxTemp) {
+    maxTemp = temp;
+    document.getElementById("tempMaxValue").textContent = maxTemp.toFixed(1) + "°";
+  }
+  if (temp < minTemp) {
+    minTemp = temp;
+    document.getElementById("tempMinValue").textContent = minTemp.toFixed(1) + "°";
+  }
+
+  // Store
+  allTemps.push(temp);
+  if (allTemps.length > 200) allTemps.shift();
+
+  // Chart — dynamic Y axis
+  const cMin = Math.min(...tempDataPoints, temp);
+  const cMax = Math.max(...tempDataPoints, temp);
+  tempChart.options.scales.y.suggestedMin = Math.max(20, cMin - 2);
+  tempChart.options.scales.y.suggestedMax = cMax + 2;
+
+  const t = new Date(time);
+  const label = formatTime(t);
+  tempLabels.push(label);
+  tempDataPoints.push(temp);
+  if (tempLabels.length > MAX_POINTS) {
+    tempLabels.shift();
+    tempDataPoints.shift();
+  }
+  tempChart.update();
 }

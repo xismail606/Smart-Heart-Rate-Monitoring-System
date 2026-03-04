@@ -86,6 +86,26 @@
         </div>
       </div>
 
+      <div class="temp-card" id="tempCard">
+        <div class="temp-icon">🌡️</div>
+        <div class="temp-info">
+          <div class="temp-label">Body Temperature</div>
+          <div class="temp-value-row">
+            <span class="temp-value" id="tempValue">--.-</span>
+            <span class="temp-unit">°C</span>
+          </div>
+        </div>
+        <div class="temp-status" id="tempStatus">Waiting for sensor...</div>
+      </div>
+
+      <div class="fever-banner" id="feverBanner">
+        <span>🔥</span>
+        <div class="msg">
+          Warning: High temperature detected!
+          <span>Consider seeking medical attention</span>
+        </div>
+      </div>
+
       <div class="session-bar">
         <div>
           <span class="label">⏱ Session Start: </span
@@ -118,13 +138,31 @@
           <div class="stat-label">Average</div>
           <div class="stat-value" id="avgValue">—</div>
         </div>
+        <div class="stat-card temp-stat">
+          <div class="stat-label">🌡️ Temp Max</div>
+          <div class="stat-value" id="tempMaxValue">—</div>
+        </div>
+        <div class="stat-card temp-stat">
+          <div class="stat-label">🌡️ Temp Min</div>
+          <div class="stat-value" id="tempMinValue">—</div>
+        </div>
       </div>
 
-      <div class="chart-card">
-        <div class="chart-header">
-          <span class="chart-title">📈 Pulse Log — Last 30 Readings</span>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <span class="chart-title">📈 Pulse Log — Last 30 Readings</span>
+          </div>
+          <canvas id="bpmChart"></canvas>
         </div>
-        <canvas id="bpmChart"></canvas>
+        <div class="chart-card temp-chart-card">
+          <div class="chart-header">
+            <span class="chart-title"
+              >🌡️ Temperature Log — Last 30 Readings</span
+            >
+          </div>
+          <canvas id="tempChart"></canvas>
+        </div>
       </div>
 
       <div class="footer">
