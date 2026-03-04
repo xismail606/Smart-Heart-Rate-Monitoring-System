@@ -1,6 +1,6 @@
 # 📋 VitalSync — Project Report
 
-> **Project:** Smart Heart Rate Monitoring System  
+> **Project:** Smart Vital Signs Monitoring System
 > **Version:** 1.0.0  
 > **Date:** March 2026  
 > **Author:** x606
