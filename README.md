@@ -143,7 +143,7 @@ The system is designed for health monitoring, educational demonstrations, and Io
 
 ```bash
 git clone https://github.com/xismail606/Smart-Heart-Rate-Monitoring-System.git
-cd pulse-dashboard
+cd VitalSync-dashboard
 ```
 
 ### 2. Install Dependencies
